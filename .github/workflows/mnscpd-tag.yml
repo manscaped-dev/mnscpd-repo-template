@@ -1,0 +1,46 @@
+name: Manscaped CLI Version Tag Pipeline 
+on:
+  pull_request_target:
+    types:
+      - closed
+    branches:
+      - prod
+
+jobs:
+  tag:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: 8BitJonny/gh-get-current-pr@2.2.0
+      id: PR
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        sha: ${{ github.event.pull_request.head.sha }}
+        filterOutClosed: true
+    - name: Checkout Manscaped SRE Repo
+      uses: actions/checkout@v3
+    - name: Python Installation  
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11' 
+    - name: Setting up Poetry (Python Dependency Manager)
+      run: pip install poetry
+    - name: Poetry Package Requirements Installation (Manscape CLI Context)
+      run: cd manscaped-cli || exit 1 && poetry install
+    - name: Find Tag
+      id: tagger
+      uses: jimschubert/query-tag-action@v1
+      with:
+        include: 'manscaped-cli:v*'
+    - name: Show Tag
+      id: display
+      run: |
+        echo 'Output from Find Tag: ${{steps.tagger.outputs.tag}}'
+    - name: Tagging Manscaped CLI Package
+      if: startsWith(${{ steps.PR.outputs.pr_title }}, 'release/')
+      run: |
+        git config user.email "phil.delorenzo@manscaped.com" \
+        && git config user.name "Philip De Lorenzo" \
+        && cd /home/runner/work/manscaped-sre/manscaped-cli || exit 1 \
+        && chmod +x scripts/test_tag.sh \
+        && ./scripts/test_tag.sh ${{steps.tagger.outputs.tag}}
