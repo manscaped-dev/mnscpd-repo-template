@@ -1,0 +1,20 @@
+name: Release Drafter
+
+on:
+  push:
+    # branches to consider in the event; optional, defaults to all
+    branches:
+      - dev
+
+# (Optional) GitHub Enterprise requires GHE_HOST variable set
+#- name: Set GHE_HOST
+#  run: |
+#    echo "GHE_HOST=${GITHUB_SERVER_URL##https:\/\/}" >> $GITHUB_ENV
+jobs:
+  update_release_draft:
+    runs-on: ubuntu-latest
+    steps:
+      # Drafts your next Release notes as Pull Requests are merged into "dev"
+      - uses: release-drafter/release-drafter@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}

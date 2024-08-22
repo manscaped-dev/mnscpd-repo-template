@@ -1,0 +1,73 @@
+name: SRE - Cloud Function Build/Deploy Dispatch
+run-name: "Cloud Function: ${{ inputs.cloud-function }} --> GCP Project: ${{ inputs.environment }}"
+on:
+    workflow_dispatch:
+      inputs:
+        environment:
+            description: 'The GCP Environment to deploy to'
+            required: true
+            type: choice
+            options:
+                - 'mnscpd-core-sbx'
+                - 'mnscpd-core-dev'
+            default: 'mnscpd-core-sbx'
+
+        cloud-function:
+            description: 'The name of the service to build and deploy'
+            required: true
+            type: choice
+            options:
+                # NOTE: We will want to code this out in a Python script
+                - 'rudderstack-delay'
+
+        runtime:
+            description: 'The runtime to use for the cloud function'
+            required: true
+            type: choice
+            options:
+                - 'nodejs18'
+                - 'nodejs20'
+                - 'python312'
+            default: 'nodejs18'
+
+env:
+  SERVICE_LOCATION: 'apps/cloud-functions' # The location of the service(s) code
+
+jobs:
+  build_and_deploy_cloud_function:
+    name: Build/Deploy Cloud Function (${{ inputs.cloud-function }}) to GCP (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    if: ${{ (inputs.cloud-function != 'test-cloud-function') }}
+    steps:
+      - name: Extract Branch
+        id: extract_branch
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Entrypoint
+        id: entrypoint
+        run: |
+          if [[ ${{ inputs.cloud-function }} == "test-cloud-function" ]]; then
+            echo "ENTRYPOINT=testing-function" >> $GITHUB_OUTPUT
+          elif [[ ${{ inputs.cloud-function }} == "rudderstack-delay" ]]; then
+            echo "ENTRYPOINT=rudderstackDelay" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+      - name: Dispatch Build --> Deploy Cloud Function (${{ inputs.cloud-function }}) to GCP (${{ inputs.environment }})
+        run: |
+            echo "https://api.github.com/repos/${{ secrets.SRE_DEPLOYMENT_CODE_LOCATION }}/dispatches" \
+            && curl -H "Accept: application/vnd.github.everest-preview+json" \
+            -H "Authorization: token ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}" \
+            --request POST \
+            --data '{"event_type": "msncpd-core-cloud-function", "client_payload": {
+              "github": {
+                "environment": "${{ inputs.environment }}",
+                "caller_repo": "${{ github.event.repository.full_name }}",
+                "caller_branch": "${{ steps.extract_branch.outputs.branch }}",
+                "cloud_function": "${{ inputs.cloud-function }}",
+                "entrypoint": "${{ steps.entrypoint.outputs.ENTRYPOINT }}",
+                "runtime": "${{ inputs.runtime }}",
+                "service_location": "${{ env.SERVICE_LOCATION }}",
+                "test": "false"
+              }}}' https://api.github.com/repos/manscaped-dev/${{ secrets.SRE_DEPLOYMENT_CODE_LOCATION }}/dispatches

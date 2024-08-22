@@ -14,7 +14,7 @@ jobs:
     - uses: 8BitJonny/gh-get-current-pr@2.2.0
       id: PR
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
         sha: ${{ github.event.pull_request.head.sha }}
         filterOutClosed: true
     - name: Checkout Manscaped SRE Repo

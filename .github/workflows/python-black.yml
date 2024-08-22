@@ -1,0 +1,13 @@
+# This workflow is specifically for the formatting of Python code.
+# It ensures PEP8 compliance and is a part of the CI/CD pipeline.
+
+name: Python Black
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: psf/black@stable

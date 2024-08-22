@@ -1,0 +1,74 @@
+name: SRE - Core Build/Deploy Dispatch
+run-name: "Cloud Run: ${{ inputs.service }} --> GCP Project: ${{ inputs.environment }}"
+on:
+    workflow_dispatch:
+      inputs:
+        service:
+          description: 'The name of the service to build and deploy'
+          required: true
+          type: choice
+          options:
+            # NOTE: We will want to code this out in a Python script
+            - 'maersk-service'
+            - 'mock-api-service'
+            - 'ms5-server'
+            - 'order-journey'
+            - 'seko-service'
+            - 'shiphero-service'
+            - 'shopify-webhooks'
+            - 'tagging-service'
+
+          default: 'ms5-server'
+
+        environment:
+          description: 'The GCP Project ID to use for the deployment'
+          required: true
+          type: choice
+          options:
+              - 'mnscpd-core-sbx'
+              - 'mnscpd-core-dev'
+          default: 'mnscpd-core-sbx'
+
+env:
+  LATEST_TAG: 'latest' # The tag to use for the latest image (This is a TEST)
+  SERVICE_LOCATION: 'apps' # The location of the service(s) code - no '/' prefix OR suffix
+
+jobs:
+  extract_branch:
+    name: Extract Branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract Branch
+        id: extract_branch
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        shell: bash
+
+  build_and_deploy_service:
+    name: Build/Deploy Service to Docker Image and Push to GCP (GAR)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract Branch
+        id: extract_branch
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Dispatch Build-->Deploy Service to Docker Image and Push to GCP (GAR)
+        run: |
+            echo "https://api.github.com/repos/${{ secrets.SRE_DEPLOYMENT_CODE_LOCATION }}/dispatches" \
+            && curl -H "Accept: application/vnd.github.everest-preview+json" \
+            -H "Authorization: token ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}" \
+            --request POST \
+            --data '{"event_type": "msncpd-core", "client_payload": {
+              "github": {
+                "event": "${{ github.event_name }}",
+                "repository": "${{ github.event.repository.full_name }}",
+                "caller_repo": "${{ github.event.repository.full_name }}",
+                "caller_branch": "${{ steps.extract_branch.outputs.branch }}",
+                "branch": "${{ github.event.ref }}",
+                "environment": "${{ inputs.environment }}",
+                "service_location": "${{ env.SERVICE_LOCATION }}",
+                "service": "${{ inputs.service }}",
+                "deploy": "false",
+                "build": "true",
+                "test": "false"
+              }}}' https://api.github.com/repos/manscaped-dev/${{ secrets.SRE_DEPLOYMENT_CODE_LOCATION }}/dispatches

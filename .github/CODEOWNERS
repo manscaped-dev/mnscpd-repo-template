@@ -1,0 +1,12 @@
+# This is the codeowners file for the project
+.github/CODEOWNERS  @philipdelorenzo-manscaped @ryanmccarty @presto2116 @joey-manscaped
+
+# SRE Team CODEOWNERS
+.github/workflows/commitlint.yml   @philipdelorenzo-manscaped @ryanmccarty
+.github/workflows/mnscpd-tag.yml   @philipdelorenzo-manscaped @ryanmccarty
+.github/workflows/mnscpd-core-app-dispatch.yml   @philipdelorenzo-manscaped @ryanmccarty
+.github/workflows/mnscpd-core-cf-dispatch.yml   @philipdelorenzo-manscaped @ryanmccarty
+.github/workflows/shellcheck.yml   @philipdelorenzo-manscaped @ryanmccarty
+.github/workflows/shell/**   @philipdelorenzo-manscaped @ryanmccarty
+.mnscpd-sre/    @philipdelorenzo-manscaped @ryanmccarty
+
