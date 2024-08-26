@@ -1,12 +1,12 @@
 # This is the codeowners file for the project
-.github/CODEOWNERS  @philipdelorenzo-manscaped @ryanmccarty @presto2116 @joey-manscaped
+.github/CODEOWNERS  @mnscpd-sre @presto2116 @joey-manscaped
 
 # SRE Team CODEOWNERS
-.github/workflows/commitlint.yml   @philipdelorenzo-manscaped @ryanmccarty
-.github/workflows/mnscpd-tag.yml   @philipdelorenzo-manscaped @ryanmccarty
-.github/workflows/mnscpd-core-app-dispatch.yml   @philipdelorenzo-manscaped @ryanmccarty
-.github/workflows/mnscpd-core-cf-dispatch.yml   @philipdelorenzo-manscaped @ryanmccarty
-.github/workflows/shellcheck.yml   @philipdelorenzo-manscaped @ryanmccarty
-.github/workflows/shell/**   @philipdelorenzo-manscaped @ryanmccarty
-.mnscpd-sre/    @philipdelorenzo-manscaped @ryanmccarty
+.github/workflows/commitlint.yml  @mnscpd-sre
+.github/workflows/mnscpd-tag.yml  @mnscpd-sre
+.github/workflows/mnscpd-core-app-dispatch.yml  @mnscpd-sre
+.github/workflows/mnscpd-core-cf-dispatch.yml @mnscpd-sre
+.github/workflows/shellcheck.yml  @mnscpd-sre
+.github/workflows/shell/**  @mnscpd-sre
+.mnscpd-sre/  @mnscpd-sre
 

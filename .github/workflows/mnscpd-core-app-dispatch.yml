@@ -16,6 +16,7 @@ on:
             - 'seko-service'
             - 'shiphero-service'
             - 'shopify-webhooks'
+            - 'site-build-api'
             - 'tagging-service'
 
           default: 'ms5-server'

@@ -1,0 +1,4 @@
+setup:
+  # Example of a project with a single configuration
+  # - project: ms-server
+  #   config: dev
