@@ -1,0 +1,62 @@
+name: SRE - Workflow Poll Test
+run-name: "SRE - Test: Command GH CLI Call - Workflow Report"
+on:
+    workflow_dispatch:
+
+env:
+  GH_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }} # We need to invoke this for the GitHub CLI
+  RECIEVER: "SRE - Test: Command GH CLI Call - Workflow Report" # The name key of the workflow that will be called
+
+jobs:
+  extract_branch:
+    name: Extract Branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract Branch
+        id: extract_branch
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        shell: bash
+
+  test_caller_workflow_poller:
+    name: Test the Workflow Poller
+    runs-on: ubuntu-latest
+    needs: extract_branch
+    outputs:
+      branch: ${{ steps.extract_branch.outputs.branch }}
+      workflow_id: ${{ steps.workflow_id.outputs.workflow_id }}
+      workflow_run_number: ${{ steps.workflow_run_number.outputs.workflow_run_number }}
+    steps:
+      - name: Extract Branch
+        id: extract_branch
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Dispatch Build-->Deploy Service to Docker Image and Push to GCP (GAR) (TEST ONLY)
+        run: |
+            echo "https://api.github.com/repos/${{ secrets.SRE_DEPLOYMENT_CODE_LOCATION }}/dispatches" \
+            && curl -H "Accept: application/vnd.github.everest-preview+json" \
+            -H "Authorization: token ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}" \
+            --request POST \
+            --data '{"event_type": "test-run", "client_payload": {"deploy": "true", "build": "true", "test": "true", "caller_repo": "${{ github.event.repository.full_name }}", "caller_branch": "${{ steps.extract_branch.outputs.branch }}" }}' https://api.github.com/repos/manscaped-dev/${{ secrets.SRE_DEPLOYMENT_CODE_LOCATION }}/dispatches
+
+      - uses: actions/checkout@v4
+
+      - name: Workflow ID
+        id: workflow_id
+        run: |
+          echo "Workflow ID: $(python .github/workflows/python/sre-deployment-workflow-id.py --name '${{ env.RECIEVER }}')"
+          echo 'workflow_id="$(python .github/workflows/python/sre-deployment-workflow-id.py --name "${{ env.RECIEVER }}")"' >> $GITHUB_OUTPUT
+
+      - name: Get Workflow Run Number (Dispatched Workflow)
+        id: workflow_run_number
+        run: |
+          echo "Workflow Run Number: $(python .github/workflows/python/sre-deployment-workflow-job-number.py --workflow_id '${{ steps.workflow_id.outputs.workflow_id }}')"
+          echo 'workflow_run_number="$(python .github/workflows/python/sre-deployment-workflow-job-number.py --workflow_id "${{ steps.workflow_id.outputs.workflow_id }}")"' >> $GITHUB_OUTPUT
+
+      - name: Poll Workflow Run Status
+        run: |
+          echo "Workflow ID: ${{ steps.workflow_id.outputs.workflow_id }}"
+          echo "Workflow Job ID: ${{ steps.workflow_run_number.outputs.workflow_run_number }}""
+          echo "Watch this WF # -- ${{ steps.workflow_run_number.outputs.workflow_run_number }}"
+          echo "Failures -- See URL --> $(echo $(gh run view ${{ steps.workflow_run_number.outputs.workflow_run_number }} --repo https://github.com/manscaped-dev/${{ secrets.SRE_DEPLOYMENT_CODE_LOCATION }} --json=url) | jq -r .url)"
+          gh run watch ${{ steps.workflow_run_number.outputs.workflow_run_number }} --repo https://github.com/manscaped-dev/${{ secrets.SRE_DEPLOYMENT_CODE_LOCATION }} --interval 30 --exit-status
