@@ -4,6 +4,7 @@ on:
     workflow_dispatch:
 
 env:
+  TRIGGER: test-run
   GH_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }} # We need to invoke this for the GitHub CLI
   RECIEVER: "SRE - Test: Command GH CLI Call - Workflow Report" # The name key of the workflow that will be called
 
@@ -37,7 +38,7 @@ jobs:
             && curl -H "Accept: application/vnd.github.everest-preview+json" \
             -H "Authorization: token ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}" \
             --request POST \
-            --data '{"event_type": "test-run", "client_payload": {"deploy": "true", "build": "true", "test": "true", "caller_repo": "${{ github.event.repository.full_name }}", "caller_branch": "${{ steps.extract_branch.outputs.branch }}" }}' https://api.github.com/repos/manscaped-dev/${{ secrets.SRE_DEPLOYMENT_CODE_LOCATION }}/dispatches
+            --data '{"event_type": "${{ env.TRIGGER }}", "client_payload": {"deploy": "true", "build": "true", "test": "true", "caller_repo": "${{ github.event.repository.full_name }}", "caller_branch": "${{ steps.extract_branch.outputs.branch }}" }}' https://api.github.com/repos/manscaped-dev/${{ secrets.SRE_DEPLOYMENT_CODE_LOCATION }}/dispatches
 
       - uses: actions/checkout@v4
 

@@ -31,6 +31,7 @@ on:
           default: 'mnscpd-core-sbx'
 
 env:
+  TRIGGER: msncpd-core
   LATEST_TAG: 'latest' # The tag to use for the latest image (This is a TEST)
   SERVICE_LOCATION: 'apps' # The location of the service(s) code - no '/' prefix OR suffix
 
@@ -59,7 +60,7 @@ jobs:
             && curl -H "Accept: application/vnd.github.everest-preview+json" \
             -H "Authorization: token ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}" \
             --request POST \
-            --data '{"event_type": "msncpd-core", "client_payload": {
+            --data '{"event_type": "${{ env.TRIGGER }}", "client_payload": {
               "github": {
                 "event": "${{ github.event_name }}",
                 "repository": "${{ github.event.repository.full_name }}",

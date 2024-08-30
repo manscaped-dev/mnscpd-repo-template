@@ -31,6 +31,7 @@ on:
             default: 'nodejs18'
 
 env:
+  TRIGGER: msncpd-core-cloud-function # The trigger for the workflow
   SERVICE_LOCATION: 'apps/cloud-functions' # The location of the service(s) code
 
 jobs:
@@ -60,7 +61,7 @@ jobs:
             && curl -H "Accept: application/vnd.github.everest-preview+json" \
             -H "Authorization: token ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}" \
             --request POST \
-            --data '{"event_type": "msncpd-core-cloud-function", "client_payload": {
+            --data '{"event_type": "${{ env.TRIGGER }}", "client_payload": {
               "github": {
                 "environment": "${{ inputs.environment }}",
                 "caller_repo": "${{ github.event.repository.full_name }}",
