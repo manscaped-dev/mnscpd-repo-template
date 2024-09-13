@@ -58,7 +58,7 @@ asdf_installation()
 python_installation()
 {
     ${PYTHON} -m pip install --upgrade pip
-    ${PYTHON} -m pip install -r "${BASE}/python.txt"
+    ${PYTHON} -m pip install  --user --break-system-packages -r "${BASE}/python.txt"
     ${PYTHON} -m virtualenv --python=python3.12 "${BASEDIR}/.python"
     "${BASEDIR}/.python/bin/pip" install --upgrade pip
     [[ -f "${BASEDIR}/requirements.txt" ]] && "${BASEDIR}/.python/bin/python" -m pip install -r "${BASEDIR}/requirements.txt"
