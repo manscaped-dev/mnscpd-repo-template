@@ -36,9 +36,9 @@ jobs:
           # The below step will pass if the head_ref is off, this is because NX is wrapping a git command and exits with 0 regardless of the git commands output
           # If this command doesn't exit with a status of 0, this step will fail
           if [[ "${{ github.event_name }}" == "push" ]]; then
-            git diff --name-only --no-renames --relative "origin/dev" "origin/${{ github.ref_name }}"
+            git diff --name-only --no-renames --relative "origin/main" "origin/${{ github.ref_name }}"
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            git diff --name-only --no-renames --relative "origin/dev" "origin/${{ github.head_ref }}"
+            git diff --name-only --no-renames --relative "origin/main" "origin/${{ github.head_ref }}"
           fi
 
       - name: Branch Evaluation
