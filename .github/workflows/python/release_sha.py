@@ -46,7 +46,7 @@ def get_release_commit_sha(obj: dict) -> str:
     _cmd = [
         "gh",
         "api",
-        f"repos/manscaped-dev/manscaped-5-server/git/refs/tags/{_tag}"
+        f"repos/{os.environ.get('GITHUB_REPOSITORY')}/git/refs/tags/{_tag}"
     ]
 
     r = subprocess.run(_cmd, check=True, capture_output=True)
