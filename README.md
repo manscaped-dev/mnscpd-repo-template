@@ -1,6 +1,6 @@
-# Official {{ repo.name }} Documentation
+# Official Documentation
 
-{{ repo.description }}
+This is a Manscaped SRE generated repo from the [Mando CLI](https://github.com/manscaped-dev/mando)
 
 ## Getting Started
 
