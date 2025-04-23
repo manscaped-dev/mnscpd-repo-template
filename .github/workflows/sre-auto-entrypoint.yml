@@ -2,7 +2,7 @@
 # Date: 2025-03-01
 # This is the main entrypoint for the SRE Core Apps (Receiver) workflow
 # This workflow is responsible for deploying the core apps to GCP
-name: SRE CORE Apps Tasks
+name: SRE - Actions (Entrypoint)
 
 on:
   push:

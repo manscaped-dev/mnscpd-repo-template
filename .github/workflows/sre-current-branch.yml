@@ -1,6 +1,6 @@
 # Author: Philip De Lorenzo <phil.delorenzo@manscaped.com>
 # Date: 2025-03-01
-name: Core Current Branch
+name: SRE - Current Branch
 
 on:
     workflow_call:
@@ -32,7 +32,7 @@ jobs:
 
       - name: HEAD Ref Prereq
         run: |
-          git fetch origin dev
+          git fetch origin main
           # The below step will pass if the head_ref is off, this is because NX is wrapping a git command and exits with 0 regardless of the git commands output
           # If this command doesn't exit with a status of 0, this step will fail
           if [[ "${{ github.event_name }}" == "push" ]]; then
@@ -44,7 +44,7 @@ jobs:
       - name: Branch Evaluation
         id: branch
         run: |
-          git fetch origin dev
+          git fetch origin main
           if [[ "${{ github.event_name }}" == "push" ]]; then
             echo "branch_name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then

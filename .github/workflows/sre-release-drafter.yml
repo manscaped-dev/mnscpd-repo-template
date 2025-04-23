@@ -1,6 +1,6 @@
 # Author: Philip De Lorenzo <phil.delorenzo@manscaped.com>
 # Date: 2025-03-01
-name: SRE Release Drafter
+name: SRE - Release Drafter
 
 on:
   workflow_call:

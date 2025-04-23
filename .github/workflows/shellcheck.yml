@@ -23,6 +23,5 @@ jobs:
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@master
         with:
-          scandir: './scripts/*.sh'
           check_together: 'yes'
-          #additional_files: ''
+          additional_files: '/.sre/.sre-software/**/*.sh'
