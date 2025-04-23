@@ -1,0 +1,66 @@
+# See http://help.github.com/ignore-files/ for more about ignoring files.
+# SRE Automation
+/.python
+
+# compiled output
+dist
+/tmp
+/out-tsc
+/schema.gql
+
+# dependencies
+/node_modules
+
+# NOTE: We don't want any of the node_modules in the apps to be committed to the repo
+**/node_modules
+**/__pycache__
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode
+
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
+
+# File System / Reports
+local
+
+# System Files
+.DS_Store
+Thumbs.db
+
+.env
+.env.development
+.env.production
+.env.test
+.env.local
+.vercel
+
+terraform.tfvars
+.terraform
+backend.tf
+.terraform.lock.hcl
+key.json
+terraform.tfstate*
+.terraform.tfstate.lock.info
+globalConfig.json
+*.auto.tfvars
+*.bak
+ecosystem.config.js
+
+.nx/cache

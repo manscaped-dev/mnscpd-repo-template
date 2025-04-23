@@ -1,0 +1,19 @@
+# Author: Philip De Lorenzo <phil.delorenzo@manscaped.com>
+# Date: 2025-03-01
+name: SRE - Release Drafter
+
+on:
+  workflow_call:
+    secrets:
+      SRE_GITHUB_ACCESS_TOKEN:
+        description: 'Github Access Token -- SRE GITHUB_ACCESS_TOKEN (Doppler)'
+        required: true
+
+jobs:
+  update_release_draft:
+    runs-on: ubuntu-latest
+    steps:
+      # Drafts your next Release notes as Pull Requests are merged into "dev"
+      - uses: release-drafter/release-drafter@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}

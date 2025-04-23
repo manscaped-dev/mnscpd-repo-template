@@ -1,0 +1,52 @@
+# Author: Philip De Lorenzo <phil.delorenzo@manscaped.com>
+# Date: 2025-03-01
+name: SRE - Current Branch
+
+on:
+    workflow_call:
+      outputs:
+        branch_name:
+          description: 'The current branch name (from PR or push event)'
+          value: ${{ jobs.branch.outputs.branch_name }}
+
+      secrets:
+        SRE_GITHUB_ACCESS_TOKEN:
+          description: 'Github Access Token -- SRE_GITHUB_ACCESS_TOKEN (Doppler)'
+          required: true
+
+permissions: {}
+
+jobs:
+  # This check ensures that the nx command runs the `git diff` under-the-hood correctly
+  # This check will also return the correct branch name regardless of the eveny type; i.e. ~> pull_request, push, etc.
+  branch:
+    name: "Prereq: Git Reference Branch"
+    runs-on: ubuntu-latest
+    outputs:
+      branch_name: ${{ steps.branch.outputs.branch_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
+
+      - name: HEAD Ref Prereq
+        run: |
+          git fetch origin main
+          # The below step will pass if the head_ref is off, this is because NX is wrapping a git command and exits with 0 regardless of the git commands output
+          # If this command doesn't exit with a status of 0, this step will fail
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            git diff --name-only --no-renames --relative "origin/main" "origin/${{ github.ref_name }}"
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git diff --name-only --no-renames --relative "origin/main" "origin/${{ github.head_ref }}"
+          fi
+
+      - name: Branch Evaluation
+        id: branch
+        run: |
+          git fetch origin main
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "branch_name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "branch_name=${{ github.head_ref }}" >> $GITHUB_OUTPUT
+          fi

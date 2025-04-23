@@ -1,0 +1,7 @@
+feature: ["feature/*", "feat/*"]
+fix: [fix/*, bugfix/*, bug/*]
+hotfix: hotfix/*
+chore: [chore/*, renovate/*]
+documentation: docs/*
+performance: ["perf/*", "performance/*"]
+refactor: refactor/*

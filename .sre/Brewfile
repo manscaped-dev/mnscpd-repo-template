@@ -1,0 +1,10 @@
+tap "homebrew/bundle"
+tap "buo/cask-upgrade"
+tap "dopplerhq/cli"
+
+brew "dopplerhq/cli/doppler"
+brew "asdf"
+brew "python@3.12"
+brew "pipx"
+brew "nvm"
+brew "yarn"
