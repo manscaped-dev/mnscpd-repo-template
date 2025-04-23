@@ -1,0 +1,9 @@
+# This is the codeowners file for the project
+.github/CODEOWNERS  @philipdelorenzo-manscaped @ryanmccarty
+
+# SRE Team
+.github/workflows/**   @philipdelorenzo-manscaped @ryanmccarty
+.github/actions/**   @philipdelorenzo-manscaped @ryanmccarty
+.sre/    @philipdelorenzo-manscaped @ryanmccarty
+tools/cache @philipdelorenzo-manscaped @ryanmccarty
+tools/local_build @philipdelorenzo-manscaped @ryanmccarty

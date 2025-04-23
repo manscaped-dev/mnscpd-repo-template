@@ -11,4 +11,4 @@ jobs:
         with:
           configuration-path: .github/pr-labeler.yml # optional, .github/pr-labeler.yml is the default value
         env:
-          GITHUB_TOKEN: {% raw %}${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}{% endraw %}
+          GITHUB_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}

@@ -1,0 +1,111 @@
+# Author: Philip De Lorenzo <phil.delorenzo@manscaped.com>
+# Date: 2025-04-24
+name: SRE - Release Promotion
+run-name: Release Promotion --> ${{ inputs }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      staging:
+        description: 'Promote Draft Release to Staging'
+        type: boolean
+        default: false
+    
+      production:
+        description: 'Promote Pre-Release to Production'
+        type: boolean
+        default: false
+
+
+jobs:
+  pre-promotion:
+    name: Pre-Promotion Checks
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
+    steps:
+    - name: Ensure Main Branch
+      run: |
+        if [[ "${{ github.ref }}" != "refs/heads/main" ]]; then
+            echo "[ERROR] - This action can ONLY be run from the main branch."
+            echo "[INFO] - Continuing with the actions for testing..."
+            #exit 1
+        fi
+
+    - name: Prerequisites (Staging)
+      if: ${{ inputs.staging == true }}
+      run: |
+        # To run the promotion to staging, there needs to be a draft-release to promote to a pre-release
+        draft_count=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.draft == true)' | wc -l | xargs)
+        if [[ ${draft_count} -eq 0 ]]; then
+            echo "[ERROR] - To promote to staging, you must have a draft release."
+            exit 1
+        fi
+
+    - name: Prerequisites (Production)
+      if: ${{ inputs.production == true }}
+      run: |
+          # To run the promotion to production, there needs to be a pre-release from the draft release
+          prerelease_count=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.prerelease == true)' | wc -l)
+          if [[ $prerelease_count -eq 0 ]]; then
+              echo "[ERROR] - To promote to production, you must have a pre-release already in place - Please promote to staging first."
+              exit 1
+          fi
+
+  promotion:
+    name: Promote Environment
+    runs-on: ubuntu-latest
+    needs: [pre-promotion]
+    env:
+      GH_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Latest Release Tag
+      id: release
+      run: |
+        echo "[INFO] - Fetching the latest release tag -- $(gh api repos/manscaped-dev/sre-test-repo/releases --jq '.[] | select(.published_at != null) | select(.draft == false) | select(.prerelease == false) | .tag_name')"
+        echo "latest_tag=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at != null) | select(.draft == false) | select(.prerelease == false) | .tag_name')" >> $GITHUB_OUTPUT
+        echo "latest_tag_commit=$(gh api repos/${{ github.repository }}/git/ref/tags/${latest_tag} --jq '.object.sha')" >> $GITHUB_OUTPUT
+
+    # This step should call the sre-auto-entrypoint.yml workflow_call
+    - name: Promote to Staging
+      if: ${{ inputs.staging == true }}
+      run: |
+        echo "[INFO] - Promoting to Staging - the prerequisities have been met."
+        echo "[INFO] - Latest Release: ${{ steps.release.outputs.latest_tag }}"
+        echo "[INFO] - Latest Commit: ${{ steps.release.outputs.latest_tag_commit }}"
+        echo "[INFO] - Draft Release: $(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at == null) | select(.draft == true) | select(.prerelease == false)')"
+        echo "[INFO] - Commit branch: $(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at == null) | select(.draft == true) | select(.prerelease == false) | .target_commitish')"
+        commit_branch=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at == null) | select(.draft == true) | select(.prerelease == false) | .target_commitish')
+        echo ""
+        echo "[INFO] - Changes to be made:"
+        git fetch --all
+        git diff --name-only ${{ steps.release.outputs.latest_tag_commit }} origin/main
+
+        echo "[INFO] - Running Python commands to promote the draft release to a pre-release..."
+        pip install -r .github/workflows/python/requirements.txt
+
+        echo "[INFO] - Running the promotion script..."
+        python3 .github/workflows/python/promote.py --prerelease
+
+    # This step should call the sre-auto-entrypoint.yml workflow_call
+    - name: Promote to Production
+      if: ${{ inputs.production == true }}
+      run: |
+        echo "[INFO] - Promoting to Production - the prerequisities have been met."
+        echo "[INFO] - Pre-Release: $(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at == null) | select(.draft == false) | select(.prerelease == true)')"
+        echo "[INFO] - Commit Branch: $(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at == null) | select(.draft == false) | select(.prerelease == true) | .target_commitish')"
+        git diff --name-only ${{ steps.release.outputs.latest_tag }}..$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at == null) | select(.draft == false) | select(.prerelease == true) | .target_commitish')
+        
+        echo "[INFO] - Running Python commands to promote the pre-release to the latest release..."
+        pip install -r .github/workflows/python/requirements.txt
+
+        echo "[INFO] - Running the promotion script..."
+        python3 .github/workflows/python/promote.py --release
