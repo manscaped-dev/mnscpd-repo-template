@@ -1,0 +1,26 @@
+# This action is for ensuring that the shell scripts are properly formatted and do not contain any errors.
+on:
+  push:
+    branches:
+      - "*"
+      - "!main"
+      - "!prod"
+      - "!dev"
+
+name: "Trigger: Shellcheck"
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  shellcheck:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './scripts/*.sh'
+          check_together: 'yes'
+          #additional_files: ''
