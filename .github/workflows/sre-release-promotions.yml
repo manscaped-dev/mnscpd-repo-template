@@ -34,6 +34,8 @@ jobs:
 
     - name: Prerequisites (Staging)
       if: ${{ inputs.staging == true }}
+      env:
+        GH_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
       run: |
         # To run the promotion to staging, there needs to be a draft-release to promote to a pre-release
         draft_count=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.draft == true)' | wc -l | xargs)
@@ -44,6 +46,8 @@ jobs:
 
     - name: Prerequisites (Production)
       if: ${{ inputs.production == true }}
+      env:
+        GH_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
       run: |
           # To run the promotion to production, there needs to be a pre-release from the draft release
           prerelease_count=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.prerelease == true)' | wc -l)
@@ -77,6 +81,8 @@ jobs:
     # This step should call the sre-auto-entrypoint.yml workflow_call
     - name: Promote to Staging
       if: ${{ inputs.staging == true }}
+      env:
+        GH_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
       run: |
         echo "[INFO] - Promoting to Staging - the prerequisities have been met."
         echo "[INFO] - Latest Release: ${{ steps.release.outputs.latest_tag }}"
@@ -98,6 +104,8 @@ jobs:
     # This step should call the sre-auto-entrypoint.yml workflow_call
     - name: Promote to Production
       if: ${{ inputs.production == true }}
+      env:
+        GH_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
       run: |
         echo "[INFO] - Promoting to Production - the prerequisities have been met."
         echo "[INFO] - Pre-Release: $(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at == null) | select(.draft == false) | select(.prerelease == true)')"
