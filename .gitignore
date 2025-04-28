@@ -3,7 +3,7 @@
 /.python
 
 # compiled output
-dist
+/dist
 /tmp
 /out-tsc
 /schema.gql
