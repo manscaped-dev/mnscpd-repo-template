@@ -73,13 +73,13 @@ if __name__ == "__main__":
     if args.prerelease:
         # This is begins the release process for a draft release (dev) to a pre-release (stg)
         # We MUST have a draft release to process and promote to a pre-release
-        _draft_release = get_draft_release(_releases=_releases)
+        _draft_release = get_draft_release(obj=_releases)
         ic(f"Draft Release: {_draft_release}") # Print the draft release - debugging purposes
 
         release_id = get_release_id(tagName=_draft_release.get("tagName")) # Get the draft release id
         ic(f"Draft Release ID: {release_id}")
         
-        _prerelease = get_pre_release(_releases=_releases)
+        _prerelease = get_pre_release(obj=_releases)
         ic(f"Pre-Release: {_prerelease}")
 
         # Let's check if we have a pre-release, if so, we need to fail as there can be only one
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     if args.release:
         # This is begins the release process for a pre-release (stg) to a latest release (prod)
         # We MUST have a pre-release to process and promote to a latest release
-        _prerelease = get_pre_release(_releases=_releases)
+        _prerelease = get_pre_release(obj=_releases)
         ic(f"Prerelease: {_prerelease}")
 
         release_id = get_release_id(tagName=_prerelease.get("tagName")) # Get the draft release id
