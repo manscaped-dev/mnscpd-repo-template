@@ -1,7 +1,7 @@
 # Author: Philip De Lorenzo <phil.delorenzo@manscaped.com>
 # Date: 2025-04-24
 name: SRE - Release Promotion
-run-name: Release Promotion --> ${{ inputs }}
+run-name: Release Promotion --> ${{ inputs.staging == true && 'Staging' || inputs.production == true && 'Production' || 'None' }}
 
 on:
   workflow_dispatch:
@@ -28,8 +28,7 @@ jobs:
       run: |
         if [[ "${{ github.ref }}" != "refs/heads/main" ]]; then
             echo "[ERROR] - This action can ONLY be run from the main branch."
-            echo "[INFO] - Continuing with the actions for testing..."
-            #exit 1
+            exit 1
         fi
 
     - name: Prerequisites (Staging)
@@ -66,13 +65,22 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
+    
+    - name: GH Setup
+      uses: twildber/setup-ghcli@main
 
     - name: Latest Release Tag
       id: release
       run: |
         echo "[INFO] - Fetching the latest release tag -- $(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at != null) | select(.draft == false) | select(.prerelease == false) | .tag_name')"
-        echo "latest_tag=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at != null) | select(.draft == false) | select(.prerelease == false) | .tag_name')" >> $GITHUB_OUTPUT
-        echo "latest_tag_commit=$(gh api repos/${{ github.repository }}/git/ref/tags/${latest_tag} --jq '.object.sha')" >> $GITHUB_OUTPUT
+        latest_tag=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at != null) | select(.draft == false) | select(.prerelease == false) | .tag_name')
+        echo "latest_tag=${latest_tag}" >> $GITHUB_OUTPUT
+        if [[ -z ${latest_tag} ]] || [[ "${latest_tag}" == "" ]]; then
+          echo "[ERROR] - No latest release tag found."
+          "latest_tag_commit=''" >> $GITHUB_OUTPUT
+        else
+          echo "latest_tag_commit=$(gh api repos/${{ github.repository }}/git/ref/tags/${latest_tag} --jq '.object.sha')" >> $GITHUB_OUTPUT
+        fi
 
     # This step should call the sre-auto-entrypoint.yml workflow_call
     - name: Promote to Staging
