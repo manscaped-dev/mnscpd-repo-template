@@ -28,14 +28,11 @@ jobs:
       run: |
         if [[ "${{ github.ref }}" != "refs/heads/main" ]]; then
             echo "[ERROR] - This action can ONLY be run from the main branch."
-            echo "[INFO] - Continuing with the actions for testing..."
-            #exit 1
+            exit 1
         fi
 
     - name: Prerequisites (Staging)
       if: ${{ inputs.staging == true }}
-      env:
-        GH_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
       run: |
         # To run the promotion to staging, there needs to be a draft-release to promote to a pre-release
         draft_count=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.draft == true)' | wc -l | xargs)
@@ -46,8 +43,6 @@ jobs:
 
     - name: Prerequisites (Production)
       if: ${{ inputs.production == true }}
-      env:
-        GH_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
       run: |
           # To run the promotion to production, there needs to be a pre-release from the draft release
           prerelease_count=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.prerelease == true)' | wc -l)
@@ -70,19 +65,26 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
+    
+    - name: GH Setup
+      uses: twildber/setup-ghcli@main
 
     - name: Latest Release Tag
       id: release
       run: |
         echo "[INFO] - Fetching the latest release tag -- $(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at != null) | select(.draft == false) | select(.prerelease == false) | .tag_name')"
-        echo "latest_tag=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at != null) | select(.draft == false) | select(.prerelease == false) | .tag_name')" >> $GITHUB_OUTPUT
-        echo "latest_tag_commit=$(gh api repos/${{ github.repository }}/git/ref/tags/${latest_tag} --jq '.object.sha')" >> $GITHUB_OUTPUT
+        latest_tag=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at != null) | select(.draft == false) | select(.prerelease == false) | .tag_name')
+        echo "latest_tag=${latest_tag}" >> $GITHUB_OUTPUT
+        if [[ -z ${latest_tag} ]] || [[ "${latest_tag}" == "" ]]; then
+          echo "[ERROR] - No latest release tag found."
+          "latest_tag_commit=''" >> $GITHUB_OUTPUT
+        else
+          echo "latest_tag_commit=$(gh api repos/${{ github.repository }}/git/ref/tags/${latest_tag} --jq '.object.sha')" >> $GITHUB_OUTPUT
+        fi
 
     # This step should call the sre-auto-entrypoint.yml workflow_call
     - name: Promote to Staging
       if: ${{ inputs.staging == true }}
-      env:
-        GH_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
       run: |
         echo "[INFO] - Promoting to Staging - the prerequisities have been met."
         echo "[INFO] - Latest Release: ${{ steps.release.outputs.latest_tag }}"
@@ -104,8 +106,6 @@ jobs:
     # This step should call the sre-auto-entrypoint.yml workflow_call
     - name: Promote to Production
       if: ${{ inputs.production == true }}
-      env:
-        GH_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
       run: |
         echo "[INFO] - Promoting to Production - the prerequisities have been met."
         echo "[INFO] - Pre-Release: $(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at == null) | select(.draft == false) | select(.prerelease == true)')"
