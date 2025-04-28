@@ -87,8 +87,8 @@ if __name__ == "__main__":
             raise Exception("[ERROR] - The pre-release is not empty.")
         
         # Let's cut the pre-release
-        #cut_prerelease() # Cut the pre-release
-        print("[SUCCESS] - Cutting the pre-release...this must be activated.")
+        cut_prerelease() # Cut the pre-release
+        print("[SUCCESS] - Cutting the pre-release...")
 
 
     if args.release:
@@ -104,5 +104,5 @@ if __name__ == "__main__":
             raise Exception("[ERROR] - The pre-release is empty.")
         
         # Let's cut the release
-        #cut_release()
-        print("[SUCCESS] - Cutting the release...this must be activated.")
+        cut_release()
+        print("[SUCCESS] - Cutting the release....")
