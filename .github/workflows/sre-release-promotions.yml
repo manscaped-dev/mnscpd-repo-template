@@ -115,7 +115,13 @@ jobs:
         echo "[INFO] - Promoting to Production - the prerequisities have been met."
         echo "[INFO] - Pre-Release: $(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at == null) | select(.draft == false) | select(.prerelease == true)')"
         echo "[INFO] - Commit Branch: $(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at == null) | select(.draft == false) | select(.prerelease == true) | .target_commitish')"
-        git diff --name-only ${{ steps.release.outputs.latest_tag }}..$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at == null) | select(.draft == false) | select(.prerelease == true) | .target_commitish')
+        commit_branch=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at == null) | select(.draft == true) | select(.prerelease == false) | .target_commitish')
+        git fetch --all
+        if [[ -z ${{ steps.release.outputs.latest_tag }} ]]; then
+          git diff --name-only origin/main
+        else
+          git diff --name-only ${{ steps.release.outputs.latest_tag }}..$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at == null) | select(.draft == false) | select(.prerelease == true) | .target_commitish')
+        fi
         
         echo "[INFO] - Running Python commands to promote the pre-release to the latest release..."
         pip install -r .github/workflows/python/requirements.txt
