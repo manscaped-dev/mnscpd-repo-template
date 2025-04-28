@@ -38,7 +38,14 @@ jobs:
           if [[ "${{ github.event_name }}" == "push" ]]; then
             git diff --name-only --no-renames --relative "origin/main" "origin/${{ github.ref_name }}"
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            git diff --name-only --no-renames --relative "origin/main" "origin/${{ github.head_ref }}"
+            if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
+              echo "This PR is merged, skipping git diff check."
+            else
+              # This will fail if the head_ref is off
+              # This command will return a non-zero exit code if there are no changes
+              # This command will return a zero exit code if there are changes
+              git diff --name-only --no-renames --relative "origin/main" "origin/${{ github.head_ref }}"
+            fi
           fi
 
       - name: Branch Evaluation
@@ -48,5 +55,9 @@ jobs:
           if [[ "${{ github.event_name }}" == "push" ]]; then
             echo "branch_name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "branch_name=${{ github.head_ref }}" >> $GITHUB_OUTPUT
+            if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
+              echo "This PR is merged, skipping branch name output."
+            else
+              echo "branch_name=${{ github.head_ref }}" >> $GITHUB_OUTPUT
+            fi
           fi
