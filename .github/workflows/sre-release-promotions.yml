@@ -95,7 +95,12 @@ jobs:
         echo ""
         echo "[INFO] - Changes to be made:"
         git fetch --all
-        git diff --name-only ${{ steps.release.outputs.latest_tag_commit }} origin/main
+        if [[ -z ${{ steps.release.outputs.latest_tag_commit }} ]]; then
+          git diff --name-only origin/main
+        else
+          git diff --name-only ${{ steps.release.outputs.latest_tag_commit }}..origin/main
+        fi
+        echo ""
 
         echo "[INFO] - Running Python commands to promote the draft release to a pre-release..."
         pip install -r .github/workflows/python/requirements.txt
