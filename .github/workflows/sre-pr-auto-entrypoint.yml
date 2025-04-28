@@ -8,7 +8,7 @@ on:
   pull_request:
     branches:
       - main # Only for the main branch
-    types: [opened, reopened, synchronize, closed]
+    types: [closed]
 
 jobs:
     # Let's get the branch name (Branches are different for PRs and pushes)
