@@ -1,7 +1,7 @@
 # Author: Philip De Lorenzo <phil.delorenzo@manscaped.com>
 # Date: 2025-04-24
 name: SRE - Release Promotion
-run-name: Release Promotion --> ${{ inputs }}
+run-name: Release Promotion --> ${{ inputs.staging == true && 'Staging' || inputs.production == true && 'Production' || 'None' }}
 
 on:
   workflow_dispatch:
