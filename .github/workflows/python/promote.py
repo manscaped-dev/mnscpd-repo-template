@@ -29,11 +29,6 @@ args = parser.parse_args() # Parse the arguments
 if args.debug:
     ic.enable() # Enable debug mode
 
-
-# Let's get the releases for the repository - This data will be used to get the release information
-_releases: list[dict] = get_releases() # Get the releases for the repository
-ic(f"Releases: {_releases}") # Print the releases - debugging purposes
-
 def cut_prerelease():
     _cmd = [
         "gh",
@@ -68,6 +63,10 @@ def cut_release():
 
 
 if __name__ == "__main__":
+    # Let's get the releases for the repository - This data will be used to get the release information
+    _releases: list[dict] = get_releases() # Get the releases for the repository
+    ic(f"Releases: {_releases}") # Print the releases - debugging purposes
+
     if (not args.prerelease) and (not args.release):
         raise Exception("[ERROR] - Please provide a valid argument --prerelease or --release.")
     
