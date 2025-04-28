@@ -1,0 +1,22 @@
+# Author: Philip De Lorenzo <phil.delorenzo@manscaped.com>
+# Date: 2025-03-01
+# This is the main entrypoint for the SRE Core Apps (Receiver) workflow
+# This workflow is responsible for deploying the core apps to GCP
+name: SRE - Push Actions (Entrypoint)
+
+on:
+  push:
+    branches:
+      - '*' # All branches
+
+jobs:
+    # Let's get the branch name (Branches are different for PRs and pushes)
+    call-branch:
+        uses: ./.github/workflows/sre-current-branch.yml
+        secrets:
+            SRE_GITHUB_ACCESS_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
+
+    # Example: If you need to run a job, or a workflow_call, here is where/how you would do it
+    # call-release-drafter:
+    #   needs: [call-branch]
+    #   uses: ./.github/workflows/sre-release-drafter.yml

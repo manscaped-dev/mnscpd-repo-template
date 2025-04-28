@@ -1,0 +1,26 @@
+# Author: Philip De Lorenzo <phil.delorenzo@manscaped.com>
+# Date: 2025-03-01
+# This is the main entrypoint for the SRE Core Apps (Receiver) workflow
+# This workflow is responsible for deploying the core apps to GCP
+name: SRE - PR Actions (Entrypoint)
+
+on:
+  pull_request:
+    branches:
+      - main # Only for the main branch
+    types: [opened, reopened, synchronize, closed]
+
+jobs:
+    # Let's get the branch name (Branches are different for PRs and pushes)
+    call-branch:
+        uses: ./.github/workflows/sre-current-branch.yml
+        secrets:
+            SRE_GITHUB_ACCESS_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
+
+    # If this is a github pull_request, and it is merged, then we want to run the release drafter
+    call-release-drafter:
+      if: github.event.pull_request.merged == true
+      needs: [call-branch]
+      uses: ./.github/workflows/sre-release-drafter.yml
+      secrets:
+        SRE_GITHUB_ACCESS_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
