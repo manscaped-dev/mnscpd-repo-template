@@ -45,6 +45,7 @@ jobs:
               # This command will return a non-zero exit code if there are no changes
               # This command will return a zero exit code if there are changes
               git diff --name-only --no-renames --relative "origin/main" "origin/${{ github.head_ref }}"
+            fi
           fi
 
       - name: Branch Evaluation
