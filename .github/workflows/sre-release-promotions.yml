@@ -75,9 +75,9 @@ jobs:
         echo "[INFO] - Fetching the latest release tag -- $(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at != null) | select(.draft == false) | select(.prerelease == false) | .tag_name')"
         latest_tag=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at != null) | select(.draft == false) | select(.prerelease == false) | .tag_name')
         echo "latest_tag=${latest_tag}" >> $GITHUB_OUTPUT
-        if [[ -z ${latest_tag} ]] || [[ "${latest_tag}" == "" ]]; then
+        if [[ -z "${latest_tag}" ]] || [[ "${latest_tag}" == "" ]]; then
           echo "[ERROR] - No latest release tag found."
-          "latest_tag_commit=''" >> $GITHUB_OUTPUT
+          echo "latest_tag_commit=''" >> $GITHUB_OUTPUT
         else
           echo "latest_tag_commit=$(gh api repos/${{ github.repository }}/git/ref/tags/${latest_tag} --jq '.object.sha')" >> $GITHUB_OUTPUT
         fi
