@@ -70,7 +70,7 @@ jobs:
     - name: Latest Release Tag
       id: release
       run: |
-        echo "[INFO] - Fetching the latest release tag -- $(gh api repos/manscaped-dev/sre-test-repo/releases --jq '.[] | select(.published_at != null) | select(.draft == false) | select(.prerelease == false) | .tag_name')"
+        echo "[INFO] - Fetching the latest release tag -- $(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at != null) | select(.draft == false) | select(.prerelease == false) | .tag_name')"
         echo "latest_tag=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at != null) | select(.draft == false) | select(.prerelease == false) | .tag_name')" >> $GITHUB_OUTPUT
         echo "latest_tag_commit=$(gh api repos/${{ github.repository }}/git/ref/tags/${latest_tag} --jq '.object.sha')" >> $GITHUB_OUTPUT
 
