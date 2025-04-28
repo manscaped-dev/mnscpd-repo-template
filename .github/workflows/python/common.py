@@ -17,7 +17,7 @@ def get_releases() -> list[dict]:
     """This function will return the releases for the repo -- @manscaped-dev/<repo>.
     
     Returns:
-        list[dict]: The releases for the repo -- @manscaped-dev/<repo>
+        list[dict]: The releases for the repo -- @manscaped-dev/manscaped-sre-deploy
     """
     # Let's get a JSON objects of the name, id of the workflows
     _cmd = [
