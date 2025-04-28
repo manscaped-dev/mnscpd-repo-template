@@ -76,7 +76,7 @@ jobs:
         latest_tag=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at != null) | select(.draft == false) | select(.prerelease == false) | .tag_name')
         echo "latest_tag=${latest_tag}" >> $GITHUB_OUTPUT
         if [[ -z "${latest_tag}" ]] || [[ "${latest_tag}" == "" ]]; then
-          echo "[ERROR] - No latest release tag found."
+          echo "[WARNING] - No latest release tag found."
           echo "latest_tag_commit=''" >> $GITHUB_OUTPUT
         else
           echo "latest_tag_commit=$(gh api repos/${{ github.repository }}/git/ref/tags/${latest_tag} --jq '.object.sha')" >> $GITHUB_OUTPUT
@@ -118,7 +118,7 @@ jobs:
         commit_branch=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.draft == true) | select(.prerelease == false) | .target_commitish')
         git fetch --all
         git diff --name-only origin/main
-        #if [[ -z ${{ steps.release.outputs.latest_tag }} ]]; then
+        #if [[ -z "${{ steps.release.outputs.latest_tag }}" ]] || [[ "${{ steps.release.outputs.latest_tag }}" == "" ]]; then
         #  git diff --name-only origin/main
         #else
         #  git diff --name-only ${{ steps.release.outputs.latest_tag }}..$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.draft == false) | select(.prerelease == true) | .target_commitish')
