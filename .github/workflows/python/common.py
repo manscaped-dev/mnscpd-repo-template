@@ -45,7 +45,13 @@ def get_draft_release(obj: list) -> dict:
     Returns:
         dict: The draft release for the SRE Deployments Repo -- @manscaped-dev/<repo>.
     """
-    return next([i for i in obj if i.get("isDraft") == True], None) # Return the draft release
+    _data = [i for i in obj if i.get("isDraft") == True]
+    
+    if len(_data) > 1:
+        print("[ERROR] - There are multiple draft releases.")
+        sys.exit(1)
+
+    return _data[0] if _data else None # Return the draft release
 
 
 def get_pre_release(obj: list) -> dict:
@@ -54,7 +60,13 @@ def get_pre_release(obj: list) -> dict:
     Returns:
         dict: The prerelease for the repo -- @manscaped-dev/<repo>.
     """
-    return next([i for i in obj if i.get("isPrerelease") == True], None) # Return the pre-release
+    _data = [i for i in obj if i.get("isPrerelease") == True]
+
+    if len(_data) > 1:
+        print("[ERROR] - There are multiple pre-releases.")
+        sys.exit(1)
+
+    return _data[0] if _data else None # Return the pre-release
 
 
 def latest_release(obj: list) -> dict:
@@ -63,7 +75,13 @@ def latest_release(obj: list) -> dict:
     Returns:
         dict: The release for the repo -- @manscaped-dev/<repo>.
     """
-    return next([i for i in obj if i.get("isLatest") == True], None) # Return the latest release
+    _data = [i for i in obj if i.get("isLatest") == True]
+
+    if len(_data) > 1:
+        print("[ERROR] - There are multiple latest releases.")
+        sys.exit(1)
+
+    return _data[0] if _data else None # Return the pre-release
 
 
 def get_release_id(tagName: str) -> str:
