@@ -1,6 +1,6 @@
 # Author: Philip De Lorenzo <phil.delorenzo@manscaped.com>
-# Date: 2025-04-24
-name: SRE - Release Promotion
+# Date: 2025-03-01
+name: SRE Documentation Release Promotion
 run-name: Release Promotion --> ${{ inputs.staging == true && 'Staging' || inputs.production == true && 'Production' || 'None' }}
 
 on:
@@ -16,6 +16,8 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: write
 
 jobs:
   pre-promotion:
@@ -23,11 +25,21 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
     steps:
+    - name: gh CLI Test
+      run: |
+        echo "[INFO] - Testing the gh CLI..."
+        gh --version
+        echo "[INFO] - Testing the gh CLI authentication..."
+        gh auth status
+        gh api users
+
     - name: Ensure Main Branch
       run: |
         if [[ "${{ github.ref }}" != "refs/heads/main" ]]; then
             echo "[ERROR] - This action can ONLY be run from the main branch."
+            echo "[INFO] - Continuing with the actions for testing..."
             exit 1
         fi
 
@@ -57,29 +69,27 @@ jobs:
     needs: [pre-promotion]
     env:
       GH_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
-    
-    - name: GH Setup
-      uses: twildber/setup-ghcli@main
+        python-version: '3.12'
 
     - name: Latest Release Tag
       id: release
       run: |
-        echo "[INFO] - Fetching the latest release tag -- $(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at != null) | select(.draft == false) | select(.prerelease == false) | .tag_name')"
-        latest_tag=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at != null) | select(.draft == false) | select(.prerelease == false) | .tag_name')
-        echo "latest_tag=${latest_tag}" >> $GITHUB_OUTPUT
-        if [[ -z "${latest_tag}" ]] || [[ "${latest_tag}" == "" ]]; then
+        echo "[INFO] - Fetching the latest release tag -- $(gh api repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')"
+        export _latest_tag="$(gh api repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')"
+        echo "latest_tag=${_latest_tag}" >> $GITHUB_OUTPUT
+        if [[ -z "${_latest_tag}" ]] || [[ "${_latest_tag}" == "" ]] || [[ "${_latest_tag}" == "null" ]]; then
           echo "[WARNING] - No latest release tag found."
           echo "latest_tag_commit=''" >> $GITHUB_OUTPUT
         else
-          echo "latest_tag_commit=$(gh api repos/${{ github.repository }}/git/ref/tags/${latest_tag} --jq '.object.sha')" >> $GITHUB_OUTPUT
+          echo "latest_tag_commit=$(gh api repos/${{ github.repository }}/git/ref/tags/${_latest_tag} --jq '.object.sha')" >> $GITHUB_OUTPUT
         fi
 
     # This step should call the sre-auto-entrypoint.yml workflow_call
@@ -88,19 +98,18 @@ jobs:
       run: |
         echo "[INFO] - Promoting to Staging - the prerequisities have been met."
         echo "[INFO] - Latest Release: ${{ steps.release.outputs.latest_tag }}"
-        echo "[INFO] - Latest Commit: ${{ steps.release.outputs.latest_tag_commit }}"
+        echo "[INFO] - Latest Tag Commit: ${{ steps.release.outputs.latest_tag_commit }}"
         echo "[INFO] - Draft Release: $(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at == null) | select(.draft == true) | select(.prerelease == false)')"
         echo "[INFO] - Commit branch: $(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at == null) | select(.draft == true) | select(.prerelease == false) | .target_commitish')"
         commit_branch=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.published_at == null) | select(.draft == true) | select(.prerelease == false) | .target_commitish')
         echo ""
         echo "[INFO] - Changes to be made:"
         git fetch --all
-        if [[ -z ${{ steps.release.outputs.latest_tag_commit }} ]]; then
+        if [[ -z ${{ steps.release.outputs.latest_tag_commit }} ]] || [[ "${{ steps.release.outputs.latest_tag_commit }}" == '' ]]; then
           git diff --name-only origin/main
         else
           git diff --name-only ${{ steps.release.outputs.latest_tag_commit }}..origin/main
         fi
-        echo ""
 
         echo "[INFO] - Running Python commands to promote the draft release to a pre-release..."
         pip install -r .github/workflows/python/requirements.txt
@@ -115,17 +124,38 @@ jobs:
         echo "[INFO] - Promoting to Production - the prerequisities have been met."
         echo "[INFO] - Pre-Release: $(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.draft == false) | select(.prerelease == true)')"
         echo "[INFO] - Commit Branch: $(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.draft == false) | select(.prerelease == true) | .target_commitish')"
-        commit_branch=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.draft == true) | select(.prerelease == false) | .target_commitish')
-        git fetch --all
-        git diff --name-only origin/main
-        if [[ -z "${{ steps.release.outputs.latest_tag }}" ]] || [[ "${{ steps.release.outputs.latest_tag }}" == "" ]]; then
+        if [[ -z "${{ steps.release.outputs.latest_tag }}" ]] || [[ "${{ steps.release.outputs.latest_tag }}" == "" ]] || [[ "${{ steps.release.outputs.latest_tag }}" == "null" ]]; then
           git diff --name-only origin/main
         else
           git diff --name-only ${{ steps.release.outputs.latest_tag }}..$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.draft == false) | select(.prerelease == true) | .target_commitish')
         fi
-        
+
         echo "[INFO] - Running Python commands to promote the pre-release to the latest release..."
         pip install -r .github/workflows/python/requirements.txt
 
         echo "[INFO] - Running the promotion script..."
         python3 .github/workflows/python/promote.py --release
+
+    - name: Authenticate to Google Cloud
+      if: ${{ inputs.production == true }}
+      id: auth
+      uses: google-github-actions/auth@v0
+      with:
+        credentials_json: ${{ secrets.SRE_GCP_CREDENTIALS }}
+        service_account: ${{ secrets.SRE_GCP_SERVICE_ACCOUNT}}
+
+    - name: Deploy Tag
+      if: ${{ inputs.production == true }}
+      id: deploy_tag
+      run: |
+        echo "[INFO] - Deploying the tag to GCR..."
+        echo "deploy_tag=$(gh api repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')" >> $GITHUB_OUTPUT
+
+    - uses: RafikFarhad/push-to-gcr-github-action@v5-rc1
+      if: ${{ inputs.production == true }}
+      with:
+        registry: ${{ vars.REGISTRY }}
+        project_id: manscaped-sre
+        image_name: ${{ vars.IMAGE_PREFIX }}/manscaped-sre-docs
+        image_tag: "${{ steps.deploy_tag.outputs.deploy_tag }},latest"
+        dockerfile: ${{ github.workspace }}/docker/sre-docs/Dockerfile
