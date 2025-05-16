@@ -1,0 +1,118 @@
+# Author: Philip De Lorenzo <phil.delorenzo@manscaped.com>
+# Date: 2025-03-01
+name: SRE - Current Branch
+
+on:
+    workflow_call:
+      outputs:
+        version:
+          description: 'The version to set (from PR)'
+          value: ${{ jobs.version.outputs.version }}
+
+      secrets:
+        SRE_GITHUB_ACCESS_TOKEN:
+          description: 'GitHub Access Token for the SRE Mando'
+          required: true
+
+permissions: {}
+
+jobs:
+  # This check ensures that the nx command runs the `git diff` under-the-hood correctly
+  # This check will also return the correct branch name regardless of the eveny type; i.e. ~> pull_request, push, etc.
+  version:
+    name: "Prereq: Git Reference Branch"
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.vsetter.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+      
+      - run: |
+          pip install -r ${{ github.workspace }}/.github/workflows/python/requirements.txt
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.5.1
+
+      - name: Set Version Method
+        id: set-version-method
+        env:
+          GITHUB_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
+        run: |
+          echo "Workspace Contents:"
+          ls -als ${{ github.workspace }}
+          
+          if [[ ! -f "${{ github.workspace }}/mando.json" ]] && [[ ! -f "${{ github.workspace }}/pyproject.toml" ]] && [[ ! -f "${{ github.workspace }}/package.json" ]]; then
+            echo "[ERROR] No versioning file found. Please check your repository."
+            exit 1
+          fi
+
+          echo "Evaluating Versioning Method..."
+          # This is the step where we need to eval which file is running the versioning, i.e. ~> pyproject.toml, package.json, mando.jsons etc.
+          if [[ -f "${{ github.workspace }}/mando.json" ]]; then
+            echo "version_method=mando" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          if [[ -f "${{ github.workspace }}/pyproject.toml" ]]; then
+            echo "version_method=poetry" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          if [[ -f "${{ github.workspace }}/package.json" ]]; then
+            echo "version_method=npm" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "[ERROR] No versioning file found. Please check your repository."
+          exit 1
+
+      # This is the step where we need to eval which file is running the versioning, i.e. ~> pyproject.toml, package.json, mando.jsons etc.
+      - name: Version Setter
+        id: vsetter
+        env:
+          GITHUB_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
+        run: |
+          git fetch origin main
+
+          if [[ "${{ steps.set-version-method.outputs.version_method }}" == "mando" ]]; then
+            echo "Versioning Method: Mando"
+            VERSION=$(cat ${{ github.workspace }}/mando.json | jq -r .version)
+            python ${{ github.workspace }}/.github/workflows/python/registrant-github-version.py --version ${VERSION}
+            echo "version=${VERSION}" >> $GITHUB_OUTPUT
+            echo "Version Number: ${VERSION}"
+            exit 0
+          fi
+
+          if [[ "${{ steps.set-version-method.outputs.version_method }}" == "poetry" ]]; then
+            # This is the step where we need to eval which file is running the versioning, i.e. ~> pyproject.toml, package.json, mando.jsons etc.
+            # This will run some validation on the version number, and also check the current release versions.
+            echo "Versioning Method: Poetry"
+            VERSION=$(poetry version -s)
+            python ${{ github.workspace }}/.github/workflows/python/registrant-github-version.py --version ${VERSION}
+            echo "version=${VERSION}" >> $GITHUB_OUTPUT
+            echo "Version Number: ${VERSION}"
+            exit 0
+          fi
+
+          if [[ "${{ steps.set-version-method.outputs.version_method }}" == "npm" ]]; then
+            echo "Versioning Method: NPM"
+            VERSION=$(cat ${{ github.workspace }}/package.json | jq -r .version)
+            python ${{ github.workspace }}/.github/workflows/python/registrant-github-version.py --version ${VERSION}
+            echo "version=${VERSION}" >> $GITHUB_OUTPUT
+            echo "Version Number: ${VERSION}"
+            exit 0
+          fi
+
+          echo "version=''" >> $GITHUB_OUTPUT
+          exit 1
+ 

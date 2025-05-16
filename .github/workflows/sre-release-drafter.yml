@@ -4,10 +4,21 @@ name: SRE - Release Drafter
 
 on:
   workflow_call:
+    inputs:
+      # Promotion Call? Staging or Production?
+      version:
+        description: 'Semantec version of the Mando Release -- X.Y.Z'
+        required: true
+        type: string
+
     secrets:
       SRE_GITHUB_ACCESS_TOKEN:
         description: 'Github Access Token -- SRE GITHUB_ACCESS_TOKEN (Doppler)'
         required: true
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   update_release_draft:
@@ -16,4 +27,7 @@ jobs:
       # Drafts your next Release notes as Pull Requests are merged into "dev"
       - uses: release-drafter/release-drafter@v5
         env:
+          #RESOLVED_VERSION: ${{ inputs.version }}
           GITHUB_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
+        with:
+          version: ${{ inputs.version }}

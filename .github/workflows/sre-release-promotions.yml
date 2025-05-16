@@ -1,6 +1,6 @@
 # Author: Philip De Lorenzo <phil.delorenzo@manscaped.com>
 # Date: 2025-03-01
-name: SRE Documentation Release Promotion
+name: SRE Release Promotion
 run-name: Release Promotion --> ${{ inputs.staging == true && 'Staging' || inputs.production == true && 'Production' || 'None' }}
 
 on:
@@ -16,8 +16,16 @@ on:
         type: boolean
         default: false
 
+      deploy:
+        description: 'Deploy to GCR'
+        type: boolean
+        default: false
+
 permissions:
   contents: write
+
+env:
+  IMAGE_NAME: manscaped-sre-docs
 
 jobs:
   pre-promotion:
@@ -27,13 +35,26 @@ jobs:
       GH_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
     steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
     - name: gh CLI Test
       run: |
         echo "[INFO] - Testing the gh CLI..."
         gh --version
         echo "[INFO] - Testing the gh CLI authentication..."
         gh auth status
-        gh api users
+
+    - name: Registry Check
+      id: check_registry
+      run: |
+        echo "[INFO] - Checking to Ensure Registry type..."
+        if [[ ! -f "${{ github.workspace }}/mando.json" ]] && [[ ! -f "${{ github.workspace }}/pyproject.toml" ]] && [[ ! -f "${{ github.workspace }}/package.json" ]]; then
+          echo "[ERROR] - No versioning file found. Please check your repository."
+          exit 1
+        fi
 
     - name: Ensure Main Branch
       run: |
@@ -48,7 +69,7 @@ jobs:
       run: |
         # To run the promotion to staging, there needs to be a draft-release to promote to a pre-release
         draft_count=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.draft == true)' | wc -l | xargs)
-        if [[ ${draft_count} -eq 0 ]]; then
+        if [[ ${draft_count} -eq 0 ]] || [[ -z ${draft_count} ]] || [[ ${draft_count} == "null" ]]; then
             echo "[ERROR] - To promote to staging, you must have a draft release."
             exit 1
         fi
@@ -135,8 +156,24 @@ jobs:
 
         echo "[INFO] - Running the promotion script..."
         python3 .github/workflows/python/promote.py --release
+    
+  deploy:
+    name: Deploy to GCR
+    if : ${{ inputs.deploy == true }}
+    runs-on: ubuntu-latest
+    needs: [promotion]
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
+    # NOTE: READ COMMENTS BELOW - NEEDS WORK
     - name: Authenticate to Google Cloud
+      # NOTE: This step is only run if the promotion to production is successful
+      # and the deploy input is set to true.
+
+      # We want this to deploy to environments based on the environment it is building in.
       if: ${{ inputs.production == true }}
       id: auth
       uses: google-github-actions/auth@v2
@@ -145,6 +182,10 @@ jobs:
         service_account: ${{ secrets.SRE_GCP_SERVICE_ACCOUNT}}
 
     - name: Deploy Tag
+      # NOTE: This step is only run if the promotion to production is successful
+      # and the deploy input is set to true.
+
+      # We want this to deploy to environments based on the environment it is building in.
       if: ${{ inputs.production == true }}
       id: deploy_tag
       run: |
@@ -152,10 +193,14 @@ jobs:
         echo "deploy_tag=$(gh api repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')" >> $GITHUB_OUTPUT
 
     - uses: RafikFarhad/push-to-gcr-github-action@v5-rc1
+      # NOTE: This step is only run if the promotion to production is successful
+      # and the deploy input is set to true.
+
+      # We want this to deploy to environments based on the environment it is building in.
       if: ${{ inputs.production == true }}
       with:
         registry: ${{ vars.REGISTRY }}
         project_id: manscaped-sre
-        image_name: ${{ vars.IMAGE_PREFIX }}/manscaped-sre-docs
+        image_name: ${{ vars.IMAGE_PREFIX }}/${{ env.IMAGE_NAME}}
         image_tag: "${{ steps.deploy_tag.outputs.deploy_tag }},latest"
         dockerfile: ${{ github.workspace }}/docker/sre-docs/Dockerfile

@@ -5,12 +5,19 @@
 name: SRE - PR Actions (Entrypoint)
 
 on:
+  #push:
+  #  branches:
+  #    - '*' # All branches
+
   pull_request:
-    branches:
-      - main # Only for the main branch
-    types: [closed]
+    types: [opened, synchronize, reopened, closed]
 
 jobs:
+    sre-version:
+      uses: ./.github/workflows/sre-versioning.yml
+      secrets:
+        SRE_GITHUB_ACCESS_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
+
     # Let's get the branch name (Branches are different for PRs and pushes)
     call-branch:
         uses: ./.github/workflows/sre-current-branch.yml
@@ -20,7 +27,12 @@ jobs:
     # If this is a github pull_request, and it is merged, then we want to run the release drafter
     call-release-drafter:
       if: github.event.pull_request.merged == true
-      needs: [call-branch]
+      permissions:
+        contents: write # Required to create a release
+        pull-requests: write # Required to create a pull reques
+      needs: [call-branch, sre-version]
       uses: ./.github/workflows/sre-release-drafter.yml
+      with:
+        version: ${{ needs.sre-version.outputs.version }}
       secrets:
         SRE_GITHUB_ACCESS_TOKEN: ${{ secrets.SRE_GITHUB_ACCESS_TOKEN }}
