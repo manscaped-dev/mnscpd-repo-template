@@ -139,7 +139,7 @@ jobs:
     - name: Authenticate to Google Cloud
       if: ${{ inputs.production == true }}
       id: auth
-      uses: google-github-actions/auth@v0
+      uses: google-github-actions/auth@v2
       with:
         credentials_json: ${{ secrets.SRE_GCP_CREDENTIALS }}
         service_account: ${{ secrets.SRE_GCP_SERVICE_ACCOUNT}}
